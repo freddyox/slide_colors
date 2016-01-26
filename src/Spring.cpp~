@@ -1,0 +1,182 @@
+#include "../include/Spring.hh"
+#include <cmath>
+#include <iostream>
+#include <sstream>
+#include <string>
+
+Spring::Spring(float x, float y){
+
+  displayx = x;
+  displayy = y;
+
+  thickness = 10.0;  // ceiling thickness
+  
+  // Spring Attributes:
+  length_initial = 300.0;                     // m
+  length_final  =  length_initial;            // m
+  springL = 25.0;                             // N / m
+  m_const = 10.0;                             // kg
+  w_const = sqrt( k_const / m_const );        // 1/sec
+  A = 3.0;                                    // m
+  max_length = (A-1)*length_initial;          // m
+  PE_max = 0.5*k_const*pow(max_length/2.0,2); // J
+  adjust_freq = 1.0;
+
+  // Ball Attributes:
+  radius  = 15.0;
+  ball.setRadius( radius );
+  sf::FloatRect recttemp = ball.getLocalBounds();
+  ball.setOrigin( recttemp.width/2.0, recttemp.height/2.0 );
+  ball.setFillColor( sf::Color(51,0,102) );
+  ball.setPosition( displayx/2.0, thickness + length_initial );
+
+  // Make a Rod
+  rod_thickness = 10.0;
+  rod.setSize( sf::Vector2f(rod_thickness, length_initial) );
+  rod.setOrigin( rod_thickness/2.0, length_initial/2.0 );
+  rod.setFillColor( sf::Color(51,0,102) );
+  rod.setPosition(displayx/2.0, thickness + length_initial/2.0);
+
+  MakeBoarder( displayx, displayy, thickness, sf::Color(200,200,200) );
+
+  // Make a "y=0 plane"
+  y0.setSize(sf::Vector2f(displayx, 1.0) );
+  y0.setOrigin( displayx/2.0, 1.0/2.0 );
+  y0.setFillColor( sf::Color::White );
+  y0.setPosition( displayx/2.0, length_initial+thickness);
+
+  // Make a GUI Slider
+  slider_line = sf::VertexArray(sf::LinesStrip,2);
+  float sliderx = 3.0;
+  float slidery = 12.0;
+  slider.setSize( sf::Vector2f(sliderx,slidery) );
+  slider.setOrigin( sliderx/2.0, slidery/2.0 );
+  slider.setFillColor( sf::Color(200,200,200) );
+
+  //MakeSlider( displayx, displayy, adjust_freq, 0.0, sf::Color(200,200,200), slider);
+  
+  // Text
+  if( !font.loadFromFile("fonts/arial.ttf")) {
+    std::cerr << "ERROR: Font did not load properly." << std::endl;
+  }
+}
+
+void Spring::draw( sf::RenderTarget& target, sf::RenderStates ) const {
+  //target.draw( y0 );
+
+  std::vector<sf::RectangleShape>::const_iterator cit;
+  for( cit=boarder.begin(); cit!=boarder.end(); cit++ ){
+    target.draw(*cit);
+  }
+
+  target.draw( rod );
+  target.draw( ball );
+  
+  std::vector<sf::VertexArray>::const_iterator cit1;
+  for( cit1=slider_vec.begin(); cit1!=slider_vec.end(); cit1++ ){
+    target.draw(*cit1);
+  }
+  for( cit=sliders.begin(); cit!=sliders.end(); cit++ ){
+    target.draw(*cit);
+  }
+
+  // std::vector<sf::Text>::const_iterator cit2;
+  // for( cit2=textvec.begin(); cit2!=textvec.end(); cit2++ ) {
+  //   target.draw(*cit2);
+  // }
+}
+
+void Spring::UpdateSpring(double time){
+  float updateY = A*sin( w_const*time );
+  ball.move(0.0,updateY);
+  std::cout << w_const*time << std::endl;
+  length_final += updateY;
+  
+  PE = 0.5*k_const*pow( (length_final), 2);
+
+  // Update Rod Graphics
+  rod.setSize( sf::Vector2f(rod_thickness, length_final) );
+
+  // Oscillate b/w Blue & Red depending on system's PE
+  int R =  int(255*fabs(A*sin( adjust_freq*w_const*time )) / A);
+  int G = 20;
+  int B = 250;
+  rod.setFillColor( sf::Color(R,G,B) );
+  ball.setFillColor( sf::Color(R,G,B) );
+}
+
+void Spring::MakeBoarder(float x, float y, float d, sf::Color color) {
+  // Make a "Ceiling"
+  sf::Vector2f ceiling_size( x, d );
+  ceiling.setSize( ceiling_size );
+  ceiling.setOrigin( x/2.0, d/2.0 );
+  ceiling.setFillColor( color );
+  ceiling.setPosition( x/2.0, d/2.0);
+  // Make a bottom
+  bottom.setSize( ceiling_size );
+  bottom.setOrigin( x/2.0, d/2.0 );
+  bottom.setFillColor( color );
+  bottom.setPosition( x/2.0, y - d/2.0);
+  // Make a Left / Right side
+  left.setSize( sf::Vector2f( thickness, displayy - 2.0*thickness) );
+  left.setOrigin( thickness/2.0, (displayy - 2.0*thickness)/2.0 );
+  left.setFillColor( color );
+  left.setPosition( thickness/2.0, displayy/2.0 );
+  right.setSize( sf::Vector2f( thickness, displayy - 2.0*thickness) );
+  right.setOrigin( thickness/2.0, (displayy - 2.0*thickness)/2.0 );
+  right.setFillColor( color );
+  right.setPosition( displayx - thickness/2.0, displayy/2.0 );
+  boarder.push_back( ceiling );
+  boarder.push_back( bottom );
+  boarder.push_back( left );
+  boarder.push_back( right );
+}
+
+void Spring::MakeSlider(float x, float y, int slider, float offset, sf::Color color,sf::RectangleShape slide ) {
+  sf::Vector2f start( x/8.0 - thickness - 7.5, y/8.0 + offset);
+  sf::Vector2f end(  x/4.0 + 107.5, y/8.0 + offset);
+  slider_line[0].position = start;
+  slider_line[1].position = end;
+  slider_line[0].color = color;
+  slider_line[1].color = color;
+  slider_vec.push_back( slider_line );
+
+  sliders.push_back( slide );
+
+  slide.setPosition( start );
+  sliders.push_back( slide );
+
+  // Making the little "increments"
+  sf::Vector2f slider_line_dis = end - start;
+  int slider_mag = sqrt( pow(slider_line_dis.x,2) + pow(slider_line_dis.y,2) );
+  int increment = slider_mag / 20;
+  int slider_index = 1;
+
+  for( int i=0; i<=increment; i++ ){
+    sf::Vector2f start( x/8.0 - thickness - 7.5 + i*2*increment, y/8.0 + offset - 2.0 );
+    sf::Vector2f end( x/8.0 - thickness - 7.5 + i*2*increment, y/8.0 + offset + 2.0 );
+    slider_line[0].position = start;
+    slider_line[1].position = end;
+    slider_line[0].color = color;
+    slider_line[1].color = color;
+    slider_vec.push_back( slider_line );
+
+    // Add Text
+    // std::ostringstream temp;
+    // temp << slider_index;
+    // slider_index++;
+    // std::string index = temp.str();
+    // text.setFont(font);
+    // text.setCharacterSize(30);
+    // text.setString( index );
+    // text.setColor( sf::Color::Blue );
+    // text.setPosition( x/2.0+i*increment,y/4.0 + i*4);
+    // textvec.push_back( text );
+    //std::cout << textvec.size() << std::endl;
+  }
+
+}
+
+// void Spring::UpdateSlider(){
+//   ;
+// }

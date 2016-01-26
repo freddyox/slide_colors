@@ -1,0 +1,7 @@
+#include "../include/Menu.hh"
+
+Menu::Menu(float x, float y) {
+  displayx = x;
+  displayy = y;
+
+}

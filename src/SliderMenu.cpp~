@@ -1,0 +1,8 @@
+#include "../include/SliderMenu.hh"
+
+SliderMenu::SliderMenu(float x, float y){
+  displayx = x;
+  displayy = y;
+
+
+}
