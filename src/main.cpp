@@ -33,6 +33,8 @@ int main() {
     }
     // UPDATING
     window.clear( sf::Color(0,0,0) );
+    sf::Vector2i mouse = sf::Mouse::getPosition(window);
+    menu.UpdateSliders(window.mapPixelToCoords(mouse));
 
     // DRAWINGS
     window.draw( menu );
