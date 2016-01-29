@@ -39,7 +39,7 @@ private:
                // the mouse is released
   bool update_button;
 
-  //Boarder
+  // Boarder
   sf::RectangleShape ceiling, left, right, bottom;
   std::vector<sf::RectangleShape> boarder;
 
